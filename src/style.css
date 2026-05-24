@@ -1,0 +1,103 @@
+:root {
+  --parchment: #f4ead5;
+  --parchment-deep: #ead8b0;
+  --ink: #2a1810;
+  --ink-soft: #5a4636;
+  --rule: #c9b58a;
+  --accent: #8a1b1b;
+  --accent-soft: #b85a4a;
+  --gold: #a8842f;
+
+  --serif: 'Iowan Old Style', 'Hoefler Text', 'Cambria', Georgia, 'Times New Roman', serif;
+  --sans: -apple-system, system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  --radius: 6px;
+  --pad: 16px;
+  --max-width: 420px;
+
+  color-scheme: light;
+  color: var(--ink);
+  background: var(--parchment);
+  font: 16px/1.45 var(--serif);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100svh;
+  overscroll-behavior: none;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 255, 255, 0.4), transparent 60%),
+    var(--parchment);
+}
+
+#app {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) var(--pad) env(safe-area-inset-bottom);
+}
+
+.topbar {
+  text-align: center;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 0;
+  color: var(--ink);
+}
+
+.subtitle {
+  font-style: italic;
+  color: var(--ink-soft);
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pad);
+}
+
+.placeholder {
+  font-style: italic;
+  color: var(--ink-soft);
+  text-align: center;
+  max-width: 280px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 240ms ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
