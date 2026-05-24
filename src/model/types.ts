@@ -33,6 +33,7 @@ export type Inquiry = {
 export type Journal = {
   unlockedFragments: FragmentId[];
   resolvedInquiries: InquiryId[];
+  draftedScrollIds: ScrollId[];
   daysPlayed: number;
 };
 
