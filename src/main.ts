@@ -1,4 +1,5 @@
 import './style.css';
+import { DAY_STAMINA, DESK_SLOT_COUNT } from './model/index.ts';
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Missing #app root');
@@ -10,7 +11,8 @@ app.innerHTML = `
   </header>
   <main class="stage">
     <p class="placeholder">
-      The desk is empty. The first scroll has not yet been drafted.
+      The desk is empty (${DESK_SLOT_COUNT} slots, ${DAY_STAMINA} stamina).
+      The first scroll has not yet been drafted.
     </p>
   </main>
 `;
