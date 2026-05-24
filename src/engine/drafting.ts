@@ -6,7 +6,9 @@ import {
 import type {
   Day,
   DeskSlot,
+  Inquiry,
   InquiryId,
+  Journal,
   Scroll,
   ScrollId,
 } from '../model/index.ts';
@@ -23,6 +25,9 @@ export type DayResult = {
   endReason: DayEndReason;
 };
 
+const PREFERRED_WEIGHT = 3;
+const FILLER_WEIGHT = 1;
+
 type InternalDay = Day & { _placementOrder: ScrollId[] };
 
 function sample<T>(items: readonly T[], k: number, rng: Rng): T[] {
@@ -36,6 +41,21 @@ function sample<T>(items: readonly T[], k: number, rng: Rng): T[] {
     out.push(picked);
   }
   return out;
+}
+
+function weightedSample<T>(
+  items: readonly T[],
+  k: number,
+  weight: (item: T) => number,
+  rng: Rng,
+): T[] {
+  if (items.length <= k) return items.slice();
+  const keyed = items.map((item) => {
+    const w = Math.max(weight(item), 0.0001);
+    return { item, key: -Math.log(Math.max(rng(), 1e-12)) / w };
+  });
+  keyed.sort((a, b) => a.key - b.key);
+  return keyed.slice(0, k).map((e) => e.item);
 }
 
 function emptyDesk(): Day['desk'] {
@@ -56,19 +76,63 @@ function collectPlaced(desk: readonly DeskSlot[]): ScrollId[] {
   return out;
 }
 
+function offerWith(
+  deck: ScrollId[],
+  preferredScrollIds: readonly ScrollId[],
+  rng: Rng,
+): ScrollId[] {
+  if (preferredScrollIds.length === 0) {
+    return sample(deck, SCROLLS_OFFERED_PER_TURN, rng);
+  }
+  const preferredSet = new Set(preferredScrollIds);
+  return weightedSample(
+    deck,
+    SCROLLS_OFFERED_PER_TURN,
+    (id) => (preferredSet.has(id) ? PREFERRED_WEIGHT : FILLER_WEIGHT),
+    rng,
+  );
+}
+
 export function startDay(
-  inquiryId: InquiryId,
+  inquiry: Inquiry,
   catalog: readonly Scroll[],
+  journal: Journal,
   rng: Rng,
 ): Day {
   const deck = catalog.map((s) => s.id);
-  const offered = sample(deck, SCROLLS_OFFERED_PER_TURN, rng);
+  const required = inquiry.requiredScrollIds;
+  const bonus = inquiry.adjacencyBonus ?? [];
+  const preferredScrollIds = Array.from(new Set([...required, ...bonus]));
+
+  const drafted = new Set(journal.draftedScrollIds);
+  const isFirstDayOfInquiry = !required.some((id) => drafted.has(id));
+
+  let offered: ScrollId[];
+  if (isFirstDayOfInquiry) {
+    const guaranteed = required
+      .filter((id) => deck.includes(id))
+      .slice(0, SCROLLS_OFFERED_PER_TURN);
+    if (guaranteed.length >= SCROLLS_OFFERED_PER_TURN) {
+      offered = guaranteed;
+    } else {
+      const filler = sample(
+        deck.filter((id) => !guaranteed.includes(id)),
+        SCROLLS_OFFERED_PER_TURN - guaranteed.length,
+        rng,
+      );
+      offered = [...guaranteed, ...filler];
+    }
+  } else {
+    offered = offerWith(deck, preferredScrollIds, rng);
+  }
+
   const day: InternalDay = {
-    inquiryId,
+    inquiryId: inquiry.id,
     stamina: DAY_STAMINA,
     deck,
     offered,
     desk: emptyDesk(),
+    preferredScrollIds,
     _placementOrder: [],
   };
   return day;
@@ -100,7 +164,7 @@ export function playPlacement(
   nextDesk[slotIndex] = scroll;
 
   const nextDeck = internal.deck.filter((id) => id !== scrollId);
-  const nextOffered = sample(nextDeck, SCROLLS_OFFERED_PER_TURN, rng);
+  const nextOffered = offerWith(nextDeck, internal.preferredScrollIds, rng);
 
   return {
     ...internal,

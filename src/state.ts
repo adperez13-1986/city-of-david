@@ -125,7 +125,7 @@ function placeAt(s: GameState, slotIndex: number): GameState {
 
 function continueAfterDay(s: GameState): GameState {
   if (!s.currentInquiry) return s;
-  const nextDay = startDay(s.currentInquiry.id, scrolls, defaultRng);
+  const nextDay = startDay(s.currentInquiry, scrolls, s.journal, defaultRng);
   return {
     ...s,
     day: nextDay,
@@ -160,7 +160,7 @@ function commitAnswer(s: GameState): GameState {
     ...s,
     journal,
     currentInquiry: nextInquiry,
-    day: startDay(nextInquiry.id, scrolls, defaultRng),
+    day: startDay(nextInquiry, scrolls, journal, defaultRng),
     lastDay: null,
     screen: 'play',
   };
@@ -199,7 +199,7 @@ function bootState(): GameState {
   }
   return {
     journal,
-    day: startDay(inquiry.id, scrolls, defaultRng),
+    day: startDay(inquiry, scrolls, journal, defaultRng),
     selectedScrollId: null,
     screen: 'play',
     screenBeforeJournal: null,

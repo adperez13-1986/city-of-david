@@ -11,6 +11,16 @@ import {
 import { escapeHtml as esc } from './escape.ts';
 
 const EXCERPT_PREVIEW = 80;
+const MAX_TAGS_DISPLAYED = 3;
+
+function countInquiryProgress(
+  inquiry: Inquiry,
+  journal: Journal,
+): { have: number; total: number } {
+  const drafted = new Set(journal.draftedScrollIds);
+  const have = inquiry.requiredScrollIds.filter((id) => drafted.has(id)).length;
+  return { have, total: inquiry.requiredScrollIds.length };
+}
 
 export function mount(root: HTMLElement): void {
   subscribe(() => render(root));
@@ -105,6 +115,7 @@ function renderPlay(
 
 function renderTopbar(inquiry: Inquiry, day: Day, journal: Journal): string {
   const dayNumber = journal.daysPlayed + 1;
+  const { have, total } = countInquiryProgress(inquiry, journal);
   return `
     <header class="topbar fade-in">
       <div class="topbar__row">
@@ -113,6 +124,7 @@ function renderTopbar(inquiry: Inquiry, day: Day, journal: Journal): string {
         <button class="topbar__journal" data-action="open-journal" type="button">Journal</button>
       </div>
       <p class="topbar__question">${esc(inquiry.question)}</p>
+      <p class="topbar__progress">${have} of ${total} key scrolls drafted across your chronicle</p>
     </header>
   `;
 }
@@ -121,19 +133,25 @@ function renderOffer(day: Day, selectedScrollId: string | null): string {
   if (day.offered.length === 0) {
     return `<section class="offer offer--empty">The archive is dry today.</section>`;
   }
+  const preferredSet = new Set(day.preferredScrollIds);
   const cards = day.offered
     .map((id) => {
       const scroll = scrollIndex[id];
       if (!scroll) return '';
       const selected = id === selectedScrollId;
+      const relevant = preferredSet.has(id);
       const excerpt =
         scroll.textExcerpt.length > EXCERPT_PREVIEW
           ? scroll.textExcerpt.slice(0, EXCERPT_PREVIEW) + '…'
           : scroll.textExcerpt;
+      const tags = scroll.tags
+        .slice(0, MAX_TAGS_DISPLAYED)
+        .map((t) => `<span class="tag">${esc(t)}</span>`)
+        .join('');
       return `
         <button
           type="button"
-          class="scroll-card${selected ? ' scroll-card--selected' : ''}"
+          class="scroll-card${selected ? ' scroll-card--selected' : ''}${relevant ? ' scroll-card--relevant' : ''}"
           data-action="select-scroll"
           data-arg="${esc(id)}"
         >
@@ -142,6 +160,7 @@ function renderOffer(day: Day, selectedScrollId: string | null): string {
             <span class="scroll-card__cost" aria-label="Stamina cost">${scroll.staminaCost}</span>
           </div>
           <p class="scroll-card__reference">${esc(scroll.reference)}</p>
+          ${tags ? `<div class="scroll-card__tags">${tags}</div>` : ''}
           <p class="scroll-card__excerpt">${esc(excerpt)}</p>
         </button>
       `;
@@ -178,7 +197,17 @@ function renderDesk(day: Day, selectedScrollId: string | null): string {
       cells.push(`<div class="slot slot--empty" aria-hidden="true"></div>`);
     }
   }
-  return `<section class="desk" aria-label="Desk">${cells.join('')}</section>`;
+  return `
+    <section class="desk" aria-label="Desk">
+      <svg class="desk__edges" viewBox="0 0 2 1" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0.5" y1="0.25" x2="1.5" y2="0.25"></line>
+        <line x1="0.5" y1="0.75" x2="1.5" y2="0.75"></line>
+        <line x1="0.5" y1="0.25" x2="0.5" y2="0.75"></line>
+        <line x1="1.5" y1="0.25" x2="1.5" y2="0.75"></line>
+      </svg>
+      ${cells.join('')}
+    </section>
+  `;
 }
 
 function renderEndOfDay(
@@ -189,6 +218,7 @@ function renderEndOfDay(
   const resolvable = isInquiryResolvable(journal, inquiry);
   const newlyUnlocked = lastDay?.newlyUnlocked ?? [];
   const drafted = lastDay?.draftedCount ?? 0;
+  const { have, total } = countInquiryProgress(inquiry, journal);
   return `
     <div class="overlay fade-in">
       <div class="end-panel">
@@ -196,6 +226,7 @@ function renderEndOfDay(
         <p class="end-panel__subtitle">
           ${drafted} scroll${drafted === 1 ? '' : 's'} drafted${newlyUnlocked.length === 0 ? ' · no new fragments today' : ''}
         </p>
+        <p class="end-panel__progress">Inquiry progress: ${have} of ${total} key scrolls in your chronicle</p>
         ${renderUnlocks(newlyUnlocked)}
         <div class="end-panel__actions">
           <button type="button" class="btn btn--primary" data-action="continue-day">Continue</button>

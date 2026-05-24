@@ -45,4 +45,5 @@ export type Day = {
   deck: ScrollId[];
   offered: ScrollId[];
   desk: [DeskSlot, DeskSlot, DeskSlot, DeskSlot];
+  preferredScrollIds: ScrollId[];
 };
