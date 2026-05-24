@@ -47,7 +47,7 @@ body {
 #app {
   max-width: var(--max-width);
   margin: 0 auto;
-  min-height: 100svh;
+  height: 100svh;
   display: flex;
   flex-direction: column;
   padding: env(safe-area-inset-top) var(--pad) env(safe-area-inset-bottom);
@@ -120,7 +120,8 @@ button {
 /* ---------- Offer ---------- */
 
 .offer {
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: var(--gap);
@@ -206,10 +207,11 @@ button {
 /* ---------- Desk ---------- */
 
 .desk {
-  flex: none;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
+  aspect-ratio: 2 / 1;
   gap: 8px;
   margin-top: var(--gap);
   padding-top: 12px;
@@ -218,7 +220,6 @@ button {
 
 .slot {
   position: relative;
-  aspect-ratio: 1 / 1;
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
@@ -229,6 +230,7 @@ button {
   transition:
     border-color 200ms ease,
     background-color 200ms ease;
+  min-height: 0;
 }
 
 .slot--empty {
