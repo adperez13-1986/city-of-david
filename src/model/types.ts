@@ -1,6 +1,11 @@
 export type ScrollId = string;
-export type FragmentId = string;
-export type InquiryId = string;
+export type ThemeId = string;
+
+export type Theme = {
+  id: ThemeId;
+  whisper: string;
+  description?: string;
+};
 
 export type Scroll = {
   id: ScrollId;
@@ -8,42 +13,29 @@ export type Scroll = {
   reference: string;
   textExcerpt: string;
   tags: string[];
+  themeIds: ThemeId[];
   staminaCost: number;
 };
 
-export type FragmentUnlock = {
-  scrollIds: ScrollId[];
-  requireAdjacency?: boolean;
-};
-
-export type Fragment = {
-  id: FragmentId;
-  text: string;
-  unlockedBy: FragmentUnlock;
-};
-
-export type Inquiry = {
-  id: InquiryId;
-  question: string;
-  requiredScrollIds: ScrollId[];
-  adjacencyBonus?: ScrollId[];
-  fragments: Fragment[];
+export type Noticing = {
+  themeId: ThemeId;
+  whisper: string;
+  scrollIds: [ScrollId, ScrollId];
+  day: number;
+  annotation?: string;
 };
 
 export type Journal = {
-  unlockedFragments: FragmentId[];
-  resolvedInquiries: InquiryId[];
   draftedScrollIds: ScrollId[];
+  noticings: Noticing[];
   daysPlayed: number;
 };
 
 export type DeskSlot = Scroll | null;
 
 export type Day = {
-  inquiryId: InquiryId;
   stamina: number;
   deck: ScrollId[];
   offered: ScrollId[];
   desk: [DeskSlot, DeskSlot, DeskSlot, DeskSlot];
-  preferredScrollIds: ScrollId[];
 };

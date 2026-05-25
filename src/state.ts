@@ -1,31 +1,26 @@
 import type {
   Day,
-  Fragment,
-  Inquiry,
   Journal,
+  Noticing,
   ScrollId,
 } from './model/index.ts';
 import {
   defaultRng,
+  detectNoticings,
   endDay,
   isDayOver,
   playPlacement,
-  resolveDay,
+  recordDay,
   startDay,
 } from './engine/index.ts';
 import { loadJournal, saveJournal } from './storage/journal.ts';
-import { inquiries, scrollIndex, scrolls } from './content/index.ts';
+import { scrollIndex, scrolls, themeIndex, themes } from './content/index.ts';
 
-export type Screen =
-  | 'play'
-  | 'end-of-day'
-  | 'journal'
-  | 'completed'
-  | 'empty-archive';
+export type Screen = 'play' | 'end-of-day' | 'journal' | 'empty-archive';
 
 export type LastDay = {
   draftedCount: number;
-  newlyUnlocked: Fragment[];
+  newNoticings: Noticing[];
 };
 
 export type GameState = {
@@ -34,7 +29,6 @@ export type GameState = {
   selectedScrollId: ScrollId | null;
   screen: Screen;
   screenBeforeJournal: Screen | null;
-  currentInquiry: Inquiry | null;
   lastDay: LastDay | null;
 };
 
@@ -44,8 +38,7 @@ export type Action =
   | { kind: 'clear-selection' }
   | { kind: 'open-journal' }
   | { kind: 'close-journal' }
-  | { kind: 'continue-day' }
-  | { kind: 'commit-answer' };
+  | { kind: 'continue-day' };
 
 let state: GameState = bootState();
 let subscriber: (() => void) | null = null;
@@ -84,13 +77,11 @@ function reduce(s: GameState, action: Action): GameState {
       };
     case 'continue-day':
       return continueAfterDay(s);
-    case 'commit-answer':
-      return commitAnswer(s);
   }
 }
 
 function placeAt(s: GameState, slotIndex: number): GameState {
-  if (!s.day || !s.currentInquiry || s.selectedScrollId === null) return s;
+  if (!s.day || s.selectedScrollId === null) return s;
   if (s.day.desk[slotIndex] !== null) return s;
   if (!s.day.offered.includes(s.selectedScrollId)) return s;
 
@@ -107,25 +98,26 @@ function placeAt(s: GameState, slotIndex: number): GameState {
   }
 
   const dayResult = endDay(nextDay);
-  const resolved = resolveDay(s.journal, dayResult, s.currentInquiry);
-  saveJournal(resolved.journal);
+  const dayNumber = s.journal.daysPlayed + 1;
+  const newNoticings = detectNoticings(dayResult, scrollIndex, themeIndex, dayNumber);
+  const updatedJournal = recordDay(s.journal, dayResult, newNoticings);
+  saveJournal(updatedJournal);
 
   return {
     ...s,
     day: nextDay,
-    journal: resolved.journal,
+    journal: updatedJournal,
     selectedScrollId: null,
     screen: 'end-of-day',
     lastDay: {
       draftedCount: dayResult.draftedScrollIds.length,
-      newlyUnlocked: resolved.newlyUnlocked,
+      newNoticings,
     },
   };
 }
 
 function continueAfterDay(s: GameState): GameState {
-  if (!s.currentInquiry) return s;
-  const nextDay = startDay(s.currentInquiry, scrolls, s.journal, defaultRng);
+  const nextDay = startDay(scrolls, defaultRng);
   return {
     ...s,
     day: nextDay,
@@ -135,75 +127,25 @@ function continueAfterDay(s: GameState): GameState {
   };
 }
 
-function commitAnswer(s: GameState): GameState {
-  if (!s.currentInquiry) return s;
-  const resolvedInquiries = [
-    ...s.journal.resolvedInquiries,
-    s.currentInquiry.id,
-  ];
-  const journal: Journal = { ...s.journal, resolvedInquiries };
-  saveJournal(journal);
-
-  const nextInquiry = pickNextInquiry(journal);
-  if (!nextInquiry) {
-    return {
-      ...s,
-      journal,
-      currentInquiry: null,
-      day: null,
-      lastDay: null,
-      screen: 'completed',
-    };
-  }
-
-  return {
-    ...s,
-    journal,
-    currentInquiry: nextInquiry,
-    day: startDay(nextInquiry, scrolls, journal, defaultRng),
-    lastDay: null,
-    screen: 'play',
-  };
-}
-
-function pickNextInquiry(journal: Journal): Inquiry | null {
-  const resolved = new Set(journal.resolvedInquiries);
-  return inquiries.find((i) => !resolved.has(i.id)) ?? null;
-}
-
 function bootState(): GameState {
-  if (scrolls.length === 0 || inquiries.length === 0) {
+  if (scrolls.length === 0 || themes.length === 0) {
     return {
       journal: loadJournal(),
       day: null,
       selectedScrollId: null,
       screen: 'empty-archive',
       screenBeforeJournal: null,
-      currentInquiry: null,
       lastDay: null,
     };
   }
 
   const journal = loadJournal();
-  const inquiry = pickNextInquiry(journal);
-  if (!inquiry) {
-    return {
-      journal,
-      day: null,
-      selectedScrollId: null,
-      screen: 'completed',
-      screenBeforeJournal: null,
-      currentInquiry: null,
-      lastDay: null,
-    };
-  }
   return {
     journal,
-    day: startDay(inquiry, scrolls, journal, defaultRng),
+    day: startDay(scrolls, defaultRng),
     selectedScrollId: null,
     screen: 'play',
     screenBeforeJournal: null,
-    currentInquiry: inquiry,
     lastDay: null,
   };
 }

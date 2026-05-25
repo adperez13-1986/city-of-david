@@ -1,12 +1,11 @@
-import type { Journal } from '../model/index.ts';
+import type { Journal, Noticing } from '../model/index.ts';
 
-export const STORAGE_KEY = 'cityOfDavid:journal:v1';
+export const STORAGE_KEY = 'cityOfDavid:journal:v2';
 
 export function emptyJournal(): Journal {
   return {
-    unlockedFragments: [],
-    resolvedInquiries: [],
     draftedScrollIds: [],
+    noticings: [],
     daysPlayed: 0,
   };
 }
@@ -31,13 +30,25 @@ function isJournal(value: unknown): value is Journal {
   if (value === null || typeof value !== 'object') return false;
   const j = value as Partial<Journal>;
   return (
-    Array.isArray(j.unlockedFragments) &&
-    j.unlockedFragments.every((v) => typeof v === 'string') &&
-    Array.isArray(j.resolvedInquiries) &&
-    j.resolvedInquiries.every((v) => typeof v === 'string') &&
     Array.isArray(j.draftedScrollIds) &&
     j.draftedScrollIds.every((v) => typeof v === 'string') &&
+    Array.isArray(j.noticings) &&
+    j.noticings.every(isNoticing) &&
     typeof j.daysPlayed === 'number' &&
     Number.isFinite(j.daysPlayed)
+  );
+}
+
+function isNoticing(value: unknown): value is Noticing {
+  if (value === null || typeof value !== 'object') return false;
+  const n = value as Partial<Noticing>;
+  return (
+    typeof n.themeId === 'string' &&
+    typeof n.whisper === 'string' &&
+    Array.isArray(n.scrollIds) &&
+    n.scrollIds.length === 2 &&
+    n.scrollIds.every((id) => typeof id === 'string') &&
+    typeof n.day === 'number' &&
+    (n.annotation === undefined || typeof n.annotation === 'string')
   );
 }

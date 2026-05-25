@@ -1,7 +1,7 @@
 import { DAY_STAMINA, DESK_SLOT_COUNT } from '../model/index.ts';
-import type { Day, Fragment, Inquiry, Journal } from '../model/index.ts';
-import { isInquiryResolvable } from '../engine/index.ts';
-import { inquiries, scrollIndex } from '../content/index.ts';
+import type { Day, Journal, Noticing } from '../model/index.ts';
+import { noticingsByTheme } from '../engine/index.ts';
+import { scrollIndex, themes } from '../content/index.ts';
 import {
   dispatch,
   getState,
@@ -13,15 +13,6 @@ import { escapeHtml as esc } from './escape.ts';
 const EXCERPT_PREVIEW = 80;
 const MAX_TAGS_DISPLAYED = 3;
 
-function countInquiryProgress(
-  inquiry: Inquiry,
-  journal: Journal,
-): { have: number; total: number } {
-  const drafted = new Set(journal.draftedScrollIds);
-  const have = inquiry.requiredScrollIds.filter((id) => drafted.has(id)).length;
-  return { have, total: inquiry.requiredScrollIds.length };
-}
-
 export function mount(root: HTMLElement): void {
   subscribe(() => render(root));
   root.addEventListener('click', onClick);
@@ -32,33 +23,17 @@ function render(root: HTMLElement): void {
   const state = getState();
   switch (state.screen) {
     case 'play':
-      if (!state.currentInquiry || !state.day) {
+      if (!state.day) {
         root.innerHTML = renderEmptyArchive();
         return;
       }
-      root.innerHTML = renderPlay(
-        state.currentInquiry,
-        state.day,
-        state.journal,
-        state.selectedScrollId,
-      );
+      root.innerHTML = renderPlay(state.day, state.journal, state.selectedScrollId);
       return;
     case 'end-of-day':
-      if (!state.currentInquiry) {
-        root.innerHTML = renderEmptyArchive();
-        return;
-      }
-      root.innerHTML = renderEndOfDay(
-        state.currentInquiry,
-        state.journal,
-        state.lastDay,
-      );
+      root.innerHTML = renderEndOfDay(state.journal, state.lastDay);
       return;
     case 'journal':
       root.innerHTML = renderJournal(state.journal);
-      return;
-    case 'completed':
-      root.innerHTML = renderCompleted(state.journal);
       return;
     case 'empty-archive':
       root.innerHTML = renderEmptyArchive();
@@ -91,9 +66,6 @@ function onClick(event: Event): void {
     case 'continue-day':
       dispatch({ kind: 'continue-day' });
       return;
-    case 'commit-answer':
-      dispatch({ kind: 'commit-answer' });
-      return;
     case 'clear-selection':
       dispatch({ kind: 'clear-selection' });
       return;
@@ -101,21 +73,19 @@ function onClick(event: Event): void {
 }
 
 function renderPlay(
-  inquiry: Inquiry,
   day: Day,
   journal: Journal,
   selectedScrollId: string | null,
 ): string {
   return `
-    ${renderTopbar(inquiry, day, journal)}
+    ${renderTopbar(day, journal)}
     ${renderOffer(day, selectedScrollId)}
     ${renderDesk(day, selectedScrollId)}
   `;
 }
 
-function renderTopbar(inquiry: Inquiry, day: Day, journal: Journal): string {
+function renderTopbar(day: Day, journal: Journal): string {
   const dayNumber = journal.daysPlayed + 1;
-  const { have, total } = countInquiryProgress(inquiry, journal);
   return `
     <header class="topbar fade-in">
       <div class="topbar__row">
@@ -123,23 +93,33 @@ function renderTopbar(inquiry: Inquiry, day: Day, journal: Journal): string {
         <span class="topbar__stamina" aria-label="Stamina">${day.stamina}/${DAY_STAMINA}</span>
         <button class="topbar__journal" data-action="open-journal" type="button">Journal</button>
       </div>
-      <p class="topbar__question">${esc(inquiry.question)}</p>
-      <p class="topbar__progress">${have} of ${total} key scrolls drafted across your chronicle</p>
+      <p class="topbar__byline">A day at the scribe's desk. Place scrolls that share a theme adjacent to each other to notice what they share.</p>
     </header>
   `;
+}
+
+function deskThemeSet(day: Day): Set<string> {
+  const set = new Set<string>();
+  for (const slot of day.desk) {
+    if (!slot) continue;
+    for (const themeId of slot.themeIds) set.add(themeId);
+  }
+  return set;
 }
 
 function renderOffer(day: Day, selectedScrollId: string | null): string {
   if (day.offered.length === 0) {
     return `<section class="offer offer--empty">The archive is dry today.</section>`;
   }
-  const preferredSet = new Set(day.preferredScrollIds);
+  const deskThemes = deskThemeSet(day);
   const cards = day.offered
     .map((id) => {
       const scroll = scrollIndex[id];
       if (!scroll) return '';
       const selected = id === selectedScrollId;
-      const relevant = preferredSet.has(id);
+      const sharesWithDesk =
+        deskThemes.size > 0 &&
+        scroll.themeIds.some((t) => deskThemes.has(t));
       const excerpt =
         scroll.textExcerpt.length > EXCERPT_PREVIEW
           ? scroll.textExcerpt.slice(0, EXCERPT_PREVIEW) + '…'
@@ -151,7 +131,7 @@ function renderOffer(day: Day, selectedScrollId: string | null): string {
       return `
         <button
           type="button"
-          class="scroll-card${selected ? ' scroll-card--selected' : ''}${relevant ? ' scroll-card--relevant' : ''}"
+          class="scroll-card${selected ? ' scroll-card--selected' : ''}${sharesWithDesk ? ' scroll-card--echo' : ''}"
           data-action="select-scroll"
           data-arg="${esc(id)}"
         >
@@ -210,103 +190,111 @@ function renderDesk(day: Day, selectedScrollId: string | null): string {
   `;
 }
 
-function renderEndOfDay(
-  inquiry: Inquiry,
-  journal: Journal,
-  lastDay: LastDay | null,
-): string {
-  const resolvable = isInquiryResolvable(journal, inquiry);
-  const newlyUnlocked = lastDay?.newlyUnlocked ?? [];
+function renderEndOfDay(journal: Journal, lastDay: LastDay | null): string {
   const drafted = lastDay?.draftedCount ?? 0;
-  const { have, total } = countInquiryProgress(inquiry, journal);
+  const noticings = lastDay?.newNoticings ?? [];
   return `
     <div class="overlay fade-in">
       <div class="end-panel">
         <h2 class="end-panel__title">The day closes</h2>
         <p class="end-panel__subtitle">
-          ${drafted} scroll${drafted === 1 ? '' : 's'} drafted${newlyUnlocked.length === 0 ? ' · no new fragments today' : ''}
+          ${drafted} scroll${drafted === 1 ? '' : 's'} drafted${noticings.length === 0 ? ' · the day was quiet' : ''}
         </p>
-        <p class="end-panel__progress">Inquiry progress: ${have} of ${total} key scrolls in your chronicle</p>
-        ${renderUnlocks(newlyUnlocked)}
+        ${renderEndNoticings(noticings)}
+        <p class="end-panel__journal-stat">
+          ${journal.noticings.length} noticing${journal.noticings.length === 1 ? '' : 's'} in the chronicle so far
+        </p>
         <div class="end-panel__actions">
           <button type="button" class="btn btn--primary" data-action="continue-day">Continue</button>
-          ${
-            resolvable
-              ? `<button type="button" class="btn btn--accent" data-action="commit-answer">Commit your answer</button>`
-              : ''
-          }
+          <button type="button" class="btn btn--ghost" data-action="open-journal">Open journal</button>
         </div>
       </div>
     </div>
   `;
 }
 
-function renderUnlocks(fragments: Fragment[]): string {
-  if (fragments.length === 0) {
-    return `<p class="end-panel__none">You showed up. That was enough.</p>`;
+function renderEndNoticings(noticings: readonly Noticing[]): string {
+  if (noticings.length === 0) {
+    return `<p class="end-panel__none">You sat at the desk. That was enough.</p>`;
   }
-  const items = fragments
-    .map((f) => `<li class="unlock">${esc(f.text)}</li>`)
+  const items = noticings
+    .map((n) => {
+      const a = scrollIndex[n.scrollIds[0]];
+      const b = scrollIndex[n.scrollIds[1]];
+      const pair =
+        a && b
+          ? `${esc(a.title)} <span class="whisper__sep">·</span> ${esc(b.title)}`
+          : '';
+      return `
+        <li class="whisper">
+          <span class="whisper__line">${esc(n.whisper)}</span>
+          ${pair ? `<span class="whisper__pair">${pair}</span>` : ''}
+        </li>
+      `;
+    })
     .join('');
   return `
-    <div class="end-panel__unlocks">
-      <h3 class="end-panel__unlocks-title">New in the journal</h3>
-      <ul class="unlocks">${items}</ul>
+    <div class="end-panel__whispers">
+      <h3 class="end-panel__whispers-title">You noticed</h3>
+      <ul class="whispers">${items}</ul>
     </div>
   `;
 }
 
 function renderJournal(journal: Journal): string {
-  const sections = inquiries
-    .map((inquiry) => renderJournalInquiry(inquiry, journal))
+  const grouped = noticingsByTheme(journal);
+  const sections = themes
+    .map((theme) => {
+      const list = grouped.get(theme.id) ?? [];
+      return renderJournalTheme(theme.id, list, theme.whisper, theme.description);
+    })
     .join('');
-  const body =
-    inquiries.length === 0
-      ? `<p class="journal__empty">The journal has no inquiries yet.</p>`
-      : sections;
-  const draftedTotal = journal.draftedScrollIds.length;
+  const totalNoticings = journal.noticings.length;
   return `
     <div class="overlay overlay--full fade-in">
       <header class="overlay__header">
-        <h2 class="overlay__title">Journal</h2>
+        <h2 class="overlay__title">Chronicle</h2>
         <button type="button" class="overlay__close" data-action="close-journal">Close</button>
       </header>
       <p class="journal__stats">
-        Day ${journal.daysPlayed} · ${draftedTotal} scroll${draftedTotal === 1 ? '' : 's'} drafted in all
+        Day ${journal.daysPlayed} · ${journal.draftedScrollIds.length} scroll${journal.draftedScrollIds.length === 1 ? '' : 's'} drafted · ${totalNoticings} noticing${totalNoticings === 1 ? '' : 's'}
       </p>
-      <div class="journal__list">${body}</div>
+      <div class="journal__list">${sections}</div>
     </div>
   `;
 }
 
-function renderJournalInquiry(inquiry: Inquiry, journal: Journal): string {
-  const resolved = journal.resolvedInquiries.includes(inquiry.id);
-  const unlockedSet = new Set(journal.unlockedFragments);
-  const fragments = inquiry.fragments.filter((f) => unlockedSet.has(f.id));
+function renderJournalTheme(
+  themeId: string,
+  noticings: readonly Noticing[],
+  whisper: string,
+  description: string | undefined,
+): string {
+  const items =
+    noticings.length === 0
+      ? `<p class="journal-theme__empty">Not yet noticed.</p>`
+      : `<ul class="whispers whispers--journal">${noticings
+          .map((n) => {
+            const a = scrollIndex[n.scrollIds[0]];
+            const b = scrollIndex[n.scrollIds[1]];
+            const pair =
+              a && b
+                ? `${esc(a.title)} <span class="whisper__sep">·</span> ${esc(b.title)}`
+                : '';
+            return `
+              <li class="whisper whisper--journal">
+                <span class="whisper__pair">${pair}</span>
+                <span class="whisper__day">Day ${n.day}</span>
+              </li>
+            `;
+          })
+          .join('')}</ul>`;
   return `
-    <section class="journal-inquiry">
-      <h3 class="journal-inquiry__question">
-        ${esc(inquiry.question)}
-        ${resolved ? `<span class="pill pill--resolved">Answered</span>` : ''}
-      </h3>
-      ${
-        fragments.length === 0
-          ? `<p class="journal-inquiry__empty">No fragments unlocked yet.</p>`
-          : `<ul class="unlocks">${fragments.map((f) => `<li class="unlock">${esc(f.text)}</li>`).join('')}</ul>`
-      }
+    <section class="journal-theme" data-theme="${esc(themeId)}">
+      <h3 class="journal-theme__title">${esc(whisper)}</h3>
+      ${description ? `<p class="journal-theme__description">${esc(description)}</p>` : ''}
+      ${items}
     </section>
-  `;
-}
-
-function renderCompleted(journal: Journal): string {
-  return `
-    <main class="state-screen fade-in">
-      <h1 class="state-screen__title">The chronicle is whole</h1>
-      <p class="state-screen__subtitle">
-        Every inquiry has found its answer. ${journal.daysPlayed} day${journal.daysPlayed === 1 ? '' : 's'} of sitting at the desk.
-      </p>
-      <button type="button" class="btn btn--ghost" data-action="open-journal">Read the journal</button>
-    </main>
   `;
 }
 

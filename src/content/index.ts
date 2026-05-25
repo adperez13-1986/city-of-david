@@ -1,12 +1,16 @@
-import type { Scroll, ScrollId } from '../model/index.ts';
+import type { Scroll, ScrollId, Theme, ThemeId } from '../model/index.ts';
 import { scrolls } from './scrolls.ts';
-import { inquiries } from './inquiries.ts';
+import { themes } from './themes.ts';
 
 export { scrolls } from './scrolls.ts';
-export { inquiries } from './inquiries.ts';
+export { themes } from './themes.ts';
 
 export const scrollIndex: Readonly<Record<ScrollId, Scroll>> = Object.freeze(
   Object.fromEntries(scrolls.map((s) => [s.id, s])),
+);
+
+export const themeIndex: Readonly<Record<ThemeId, Theme>> = Object.freeze(
+  Object.fromEntries(themes.map((t) => [t.id, t])),
 );
 
 if (import.meta.env.DEV) {
@@ -14,23 +18,22 @@ if (import.meta.env.DEV) {
 }
 
 function validateContent(): void {
-  const scrollIds = new Set(scrolls.map((s) => s.id));
-  for (const inquiry of inquiries) {
-    for (const id of inquiry.requiredScrollIds) {
-      if (!scrollIds.has(id)) {
+  const themeIds = new Set(themes.map((t) => t.id));
+  for (const scroll of scrolls) {
+    for (const themeId of scroll.themeIds) {
+      if (!themeIds.has(themeId)) {
         console.warn(
-          `[content] inquiry "${inquiry.id}" references missing scroll: ${id}`,
+          `[content] scroll "${scroll.id}" references missing theme: ${themeId}`,
         );
       }
     }
-    for (const fragment of inquiry.fragments) {
-      for (const id of fragment.unlockedBy.scrollIds) {
-        if (!scrollIds.has(id)) {
-          console.warn(
-            `[content] fragment "${fragment.id}" references missing scroll: ${id}`,
-          );
-        }
-      }
+  }
+  for (const theme of themes) {
+    const carriers = scrolls.filter((s) => s.themeIds.includes(theme.id));
+    if (carriers.length < 2) {
+      console.warn(
+        `[content] theme "${theme.id}" has ${carriers.length} carriers (need >=2 for any noticing)`,
+      );
     }
   }
 }

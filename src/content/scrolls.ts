@@ -1,7 +1,7 @@
 import type { Scroll } from '../model/index.ts';
 
 export const scrolls: Scroll[] = [
-  // ----- Inquiry 1: cave -----
+  // ----- Cave: 1 Samuel 24 -----
   {
     id: 'cave-narrative',
     title: 'Samuel — The Cave at En-Gedi',
@@ -9,6 +9,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Saul enters the cave alone. David's men whisper of providence. David cuts the king's robe and then his own heart aches — \"for he is Yahweh's anointed.\" (24:6)",
     tags: ['saul', 'cave', 'mercy', 'anointed', 'samuel'],
+    themeIds: ['power-refusing-power', 'anointed-and-office', 'small-thing-changes'],
     staminaCost: 2,
   },
   {
@@ -18,6 +19,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Composed when he fled from Saul into the cave. \"In the shadow of your wings I will take refuge.\" (57:1) A song of mercy from inside the danger.",
     tags: ['david', 'psalm', 'cave', 'refuge', 'mercy'],
+    themeIds: ['music-from-trouble'],
     staminaCost: 1,
   },
   {
@@ -27,10 +29,11 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "David's men name the day Yahweh's: \"Behold, the day.\" The enemy delivered, the sword ready. The voice is not wrong. David refuses anyway.",
     tags: ['witness', 'cave', 'saul', 'vengeance', 'men'],
+    themeIds: ['power-refusing-power', 'anointed-and-office'],
     staminaCost: 1,
   },
 
-  // ----- Inquiry 2: Goliath -----
+  // ----- Goliath: 1 Sam 17 vs 2 Sam 21:19 vs 1 Chr 20:5 -----
   {
     id: 'david-and-giant',
     title: 'Samuel — David and the Giant',
@@ -38,6 +41,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "The shepherd runs at the line. One stone from the brook strikes the Philistine's forehead, and the giant falls face-down.",
     tags: ['david', 'goliath', 'shepherd', 'stone', 'giant'],
+    themeIds: ['canon-disagreeing'],
     staminaCost: 2,
   },
   {
@@ -47,6 +51,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Among David's mighty men: \"Elhanan… struck down Goliath the Gittite, his spear like a weaver's beam.\" (21:19)",
     tags: ['elhanan', 'goliath', 'mighty', 'contradiction'],
+    themeIds: ['canon-disagreeing'],
     staminaCost: 1,
   },
   {
@@ -56,10 +61,11 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Where Samuel says Goliath, Chronicles says Lahmi — \"the brother of Goliath the Gittite.\" (20:5) The same weaver's beam; a different name.",
     tags: ['chronicles', 'lahmi', 'goliath', 'correction'],
+    themeIds: ['canon-disagreeing', 'writer-naming'],
     staminaCost: 1,
   },
 
-  // ----- Inquiry 3: Bathsheba -----
+  // ----- Bathsheba: 2 Sam 11–12, Ps 51, Matt 1:6 -----
   {
     id: 'rooftop',
     title: 'Samuel — The Rooftop and the Letter',
@@ -67,6 +73,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "David sees, sends, takes. Uriah dies by a Philistine sword that David's own letter directed. The writer adds: \"the thing David had done displeased Yahweh.\" (11:27)",
     tags: ['bathsheba', 'david', 'uriah', 'sin', 'rooftop'],
+    themeIds: ['writer-naming', 'small-thing-changes'],
     staminaCost: 2,
   },
   {
@@ -76,6 +83,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "After Nathan came to him. \"Have mercy on me, God, according to your loving kindness.\" (51:1) The king on his face.",
     tags: ['david', 'psalm', 'repentance', 'mercy', 'nathan'],
+    themeIds: ['music-from-trouble', 'dance-song-offering'],
     staminaCost: 1,
   },
   {
@@ -85,6 +93,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Nathan tells of a rich man who took a poor man's only lamb. David's anger burns. Nathan answers: \"You are the man!\" (12:7)",
     tags: ['nathan', 'parable', 'lamb', 'rebuke'],
+    themeIds: ['small-thing-changes'],
     staminaCost: 1,
   },
   {
@@ -94,6 +103,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "In the line of Jesse and David: \"…the father of Solomon by her who had been the wife of Uriah.\" (Matt 1:6) She is named by what was taken from her.",
     tags: ['matthew', 'genealogy', 'bathsheba', 'uriah', 'messiah'],
+    themeIds: ['writer-naming'],
     staminaCost: 2,
   },
 
@@ -105,6 +115,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       'Samuel passes over seven brothers. The eighth, ruddy and bright-eyed, comes in from the sheep. The oil is poured.',
     tags: ['samuel', 'anointing', 'bethlehem', 'shepherd', 'calling'],
+    themeIds: ['anointed-and-office'],
     staminaCost: 2,
   },
   {
@@ -114,6 +125,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Three break through enemy lines for water from Bethlehem's well. David refuses to drink and pours it out to Yahweh.",
     tags: ['mighty', 'loyalty', 'water', 'bethlehem'],
+    themeIds: ['power-refusing-power'],
     staminaCost: 2,
   },
   {
@@ -123,6 +135,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "A list of David's warriors — captains, archers, foreigners — ending with \"Uriah the Hittite.\" (23:39) The roll does not flinch.",
     tags: ['mighty', 'uriah', 'roll', 'warriors'],
+    themeIds: ['writer-naming', 'canon-disagreeing'],
     staminaCost: 1,
   },
   {
@@ -132,6 +145,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "\"Yahweh is my shepherd; I shall lack nothing.\" (23:1) The song the boy carries from the fields.",
     tags: ['david', 'psalm', 'shepherd', 'trust'],
+    themeIds: ['music-from-trouble', 'dance-song-offering'],
     staminaCost: 1,
   },
   {
@@ -141,6 +155,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       'David dances before the ark with all his might. Michal watches from a window and despises him.',
     tags: ['ark', 'jerusalem', 'michal', 'worship'],
+    themeIds: ['dance-song-offering'],
     staminaCost: 2,
   },
   {
@@ -150,6 +165,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "Jonathan loves David as his own soul. He strips off his robe and gives it — sword, bow, belt, the prince's gift.",
     tags: ['jonathan', 'friendship', 'covenant', 'saul-house'],
+    themeIds: ['power-refusing-power', 'anointed-and-office'],
     staminaCost: 1,
   },
   {
@@ -159,6 +175,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "David numbers the people. The plague comes. He buys the threshing floor and builds an altar — \"I will not offer what costs me nothing.\" (24:24)",
     tags: ['census', 'plague', 'altar', 'repentance'],
+    themeIds: ['power-refusing-power', 'small-thing-changes', 'dance-song-offering'],
     staminaCost: 2,
   },
   {
@@ -168,6 +185,7 @@ export const scrolls: Scroll[] = [
     textExcerpt:
       "\"The cords of death surrounded me.\" (22:5) David's battle-life carried into song, sung after Yahweh delivered him.",
     tags: ['psalm', 'deliverance', 'battle'],
+    themeIds: ['music-from-trouble', 'dance-song-offering'],
     staminaCost: 1,
   },
 ];
